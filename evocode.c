@@ -19,7 +19,7 @@ struct Creature {
 };
   
 // All creatures
-Creature Lifes[5000];
+Creature Lifes[50000];
 // number of life creatures
 int NumOfLifes = 0;
 
@@ -38,8 +38,8 @@ int AllEnergy(void)
 
 // Return rnadom number between min and max 
 int range_rand(int min_num, int max_num) {
-    if(min_num >= max_num) {
-        fprintf(stderr, "min_num is greater or equal than max_num!\n"); 
+    if(min_num > max_num) {
+        fprintf(stderr, "min_num %i is greater than max_num %i!\n", min_num, max_num); 
     }
     return min_num + (rand() % (max_num - min_num));
 } 
@@ -115,7 +115,7 @@ int RunCode(int num)
     {
         case 1: X->Energy += 2; // Feed
         	break;
-        case 2: X->codelen -= range_rand(1, X->codelen/2); // Half genome
+        case 2: if (X->codelen > 3) X->codelen -= range_rand(1, X->codelen/2); // Half genome
 	        break;
         case 3: int k;
 		for (k = 0; k < Y->codelen-1; k++) // Learn from other creature
@@ -125,10 +125,10 @@ int RunCode(int num)
         case 4: struct Creature *New; // Make a child with random permutation
 		New = InitLife(num);
 	        if (New->codelen < 9 && range_rand(1, 3) == 1) { // 1/3 likelyhood of permutation for short genome
-		        New->Code[New->codelen] = range_rand(1, 9); // add new code at the end
+		        New->Code[New->codelen] = range_rand(1, 5); // add new code at the end
 		        New->codelen++;
 		} else {
-			New->Code[range_rand(0, New->codelen-1)] = range_rand(1, 9); // 100% likelyhood of permutation for long genome and short that out of 1/3
+			New->Code[range_rand(1, New->codelen-1)] = range_rand(1, 5); // 100% likelyhood of permutation for long genome and short that out of 1/3
 		}
 	        New->ParentRef = num; // make parent reference
 	        break;
@@ -156,8 +156,8 @@ int main()
     B = InitLife(-1);
     InitLife(-1);
     
-//  int newarr [] = {9,1,1,5,1,4,4,1,3,4,3,1,1,5,3,4,3,2,5,2,1,4};
-    int newarr [] = {0, 9,9,1,4,1,4};
+    int newarr [] = {1,1,1,5,1,4,4,1,3,4,3,1,1,5,3,4,3,2,5,2,1,4};
+//    int newarr [] = {4,4,4,1,4,2,1,4,4,4};
     
     // insert start code to first life
     int len = sizeof(newarr)/sizeof(int);
@@ -166,8 +166,8 @@ int main()
     }
     Lifes[0].codelen = len;  
 
- //   int newarr1 [] = {8,1,4,5,1,4,4,1,3,4,3,1,1,5,3};
-    int newarr1 [] = {6, 8, 8, 1,4,1};
+//    int newarr1 [] = {5,5,4,3,5,4,2,2,4,4,5,4,8,7,4,5,5,7,1,6,1,4,6,2,3,1,1,5,6,2,3,4,1,7,6,1,6,2,4,2,3,3,5,1,1,6,1,6,8,5,5,2,3,5,7,5,4,1,2,6,3,4};
+    int newarr1 [] = {1,1,4,5,1,4,4,1,3,4,3,1,1,5,3};
 
     // insert start code to second life
     len = sizeof(newarr1)/sizeof(int);
@@ -180,7 +180,7 @@ int main()
     std::cout << "Hello world!";
     for (int i = 0; i < MaxTime; i++)
     {
-        printf("\n\r------------------------\n\rWorld iteration %i", i);
+        printf("\n\r------------------------\n\rWorld iteration %i started\n", i);
          
 	// Go through existing creatures and run each one
         for (int j = 0; j < NumOfLifes; j++)
@@ -191,7 +191,8 @@ int main()
 	if (B->TimeLeft < 1) B->Energy = 0; // die if time has come )
         if (A.Energy > 0 && A.TimeLeft > 0) 
         {
-		printf("\nCreature %i->%i E:%i T:%i Pos:%i Vel:%i \n", A.ParentRef, j, A.Energy, A.TimeLeft, A.codepos, A.Velocity);
+		printf("\nCreature %i->%i E:%i T:%i Pos:%i Vel:%i codelen: %i\n", A.ParentRef, j, A.Energy, A.TimeLeft, A.codepos, A.Velocity, A.codelen);
+		printf("Code: %i", A.Code[0]);
 	        if (i < MaxTime) {
            	for (int k = 0; k < A.codelen; k++)
 		        printf("%i", A.Code[k]);
@@ -200,7 +201,8 @@ int main()
         }
  
         }
-        printf("\nTotal energy: %i", AllEnergy());
+        printf("\nTotal energy: %i \n", AllEnergy());
+        printf("\n\rWorld iteration %i ended\n\r------------------------\r\n", i);
 	// quit if everyone has died
 	if (AllEnergy() < 1) break;
     }
