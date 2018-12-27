@@ -43,7 +43,7 @@ Creature FindCreature(World &Iteration, int Ref)
 {
 	for (int i = 0; i < Iteration.NumOfLifes; i++)
 	{
-		if (Iteration.Lifes[i].Ref = Ref) return(Iteration.Lifes[i]);
+		if (Iteration.Lifes[i].Ref == Ref) return(Iteration.Lifes[i]);
 	}
 }
 
@@ -85,7 +85,8 @@ Creature InitLife(World &Iteration, int ParRef = 0)
 	Life.codelen = range_rand(5, 10);
 	Life.codepos = 0;
 	for (int i = 0; i < Life.codelen; i++) Life.Code[i] = range_rand(1, 5);
-	Life.Ref = range_rand(1, 65535);
+//	Life.Ref = range_rand(1, 65535);
+	Life.Ref = Iteration.NumOfLifes;
 	if (ParRef == 0) printf("\n *** REF IS BROKEN");
 	Life.ParentRef = ParRef;
 
@@ -193,7 +194,7 @@ int main(void)
 	World NewWorld = InitWorld();
 	RunWorld(NewWorld);
 
-	printf("\n\n *** Admire the winners:");
+	printf("\n\n *** Admire the winners genomes history:");
         for (int i = 0; i < NewWorld.NumOfLifes; i++)
 	{
 		Creature Parent = NewWorld.Lifes[i];
@@ -203,10 +204,25 @@ int main(void)
 				Parent = FindCreature(NewWorld, Parent.ParentRef);
 				printf("->");
 				PrintCode(Parent);
-				PrintLife(Parent);
+//				PrintLife(Parent);
 			}
 		}
 	}
+        printf("\n\n *** Admire the winners story:");
+        for (int i = 0; i < NewWorld.NumOfLifes; i++)
+        {
+                Creature Parent = NewWorld.Lifes[i];
+                if (IsAlive(Parent)) {
+//                        PrintLife(Parent);
+			printf("\n");
+                        while (Parent.ParentRef > 0) {
+				printf("%i->", Parent.Ref);
+                                Parent = FindCreature(NewWorld, Parent.ParentRef);
+//                              PrintLife(Parent);
+                        }
+                }
+        }
+
 
 	printf("\n");
 }
