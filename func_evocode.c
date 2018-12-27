@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -11,6 +10,7 @@ struct Creature {
 	int Code[100];
 	int codelen, codepos;
 	int ParentRef;
+	int Ref;
 };
 
 // Structure for World
@@ -24,13 +24,9 @@ struct World {
 // Return rnadom number between min and max 
 int range_rand(int min_num, int max_num) {
 
-	time_t t;
-
 	if(min_num > max_num) {
 		fprintf(stderr, "min_num %i is greater than max_num %i!\n", min_num, max_num); 
 	}
-	// Intializes random number generator 
-	srand((unsigned) time(&t));
 	// Return random number in range
 	return min_num + (rand() % (max_num - min_num));
 } 
@@ -47,7 +43,15 @@ int AllEnergy(World &Iteration)
 	return(totalenergy);
 }
 
-Creature InitLife(void)
+void PrintLife(Creature &Life)
+{
+        printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i \nCode:",
+        Life.Energy, Life.Velocity, Life.TimeLeft, Life.codelen, Life.codepos, Life.ParentRef, Life.Ref);
+
+        for (int k = 0; k < Life.codelen; k++) printf("%i", Life.Code[k]);
+}
+
+Creature InitLife(World &Iteration, int ParRef = 0)
 {
 	Creature Life;
 
@@ -57,20 +61,63 @@ Creature InitLife(void)
 	Life.codelen = range_rand(5, 10);
 	Life.codepos = 0;
 	for (int i = 0; i < Life.codelen; i++) Life.Code[i] = range_rand(1, 5);
-	Life.ParentRef = 0;
+	Life.Ref = range_rand(1, 65535);
+	Life.ParentRef = ParRef;
+
+	printf("\n LIFE BORN");
+	PrintLife(Life);
+
+	Iteration.Lifes[Iteration.NumOfLifes] = Life;
+
+	Iteration.NumOfLifes++;
 
 	return(Life);
 }
 
-void PrintLife(Creature &Life)
+int RunLife(World &Iteration, Creature &Life)
 {
-        printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i", 
-	Life.Energy, Life.Velocity, Life.TimeLeft, Life.codelen, Life.codepos, Life.ParentRef);
-}
+	struct Creature New; // Make a child with random permutation
 
-void RunLife(Creature &Life)
-{
+	int NewRef = Life.Ref;
 
+//	printf("\n BEFORE START");
+//	PrintLife(Life);
+
+	if (Life.TimeLeft > 0 && Life.Energy > 0)
+	{
+		PrintLife(Life);
+
+		// run code "Velocity" number of times     
+		for (int i = 0; i < Life.Velocity; i++) {
+		switch(Life.Code[Life.codepos])
+		{
+			case 1: Life.Energy += 2; // Feed
+				break;
+			case 2: if (Life.codelen > 3) Life.codelen -= range_rand(1, Life.codelen/2); // Half genome
+				break;
+			case 3: int k;
+				for (k = 0; k < Life.codelen-1; k++) // Learn from other creature
+				Life.Code[Life.codelen+k] = Life.Code[k+1];
+				Life.codelen = Life.codelen+k;
+				break;
+			case 4: New = InitLife(Iteration, Life.Ref);
+				if (New.codelen < 9 && range_rand(1, 3) == 1) { // 1/3 likelyhood of permutation for short genome
+					New.Code[New.codelen] = range_rand(1, 5); // add new code at the end
+					New.codelen++;
+				} else {
+					New.Code[range_rand(1, New.codelen-1)] = range_rand(1, 5); // 100% likelyhood of permutation for long genome and short that out of 1/3
+				}
+				NewRef = New.Ref;
+				break;
+			case 5: Life.Velocity++;
+				break;
+		}
+		Life.codepos++;
+		}
+		Life.TimeLeft--;
+		Life.Energy--;
+	}
+	return(NewRef);
 }
 
 World InitWorld(void)
@@ -80,9 +127,11 @@ World InitWorld(void)
         Iteration.Energy = 0;
         Iteration.TimeLeft = 100;
 	Iteration.NumOfLifes = 0;
-	Iteration.Lifes[0] = InitLife();
-        Iteration.Lifes[1] = InitLife();
-	Iteration.NumOfLifes = 2;
+	InitLife(Iteration);
+	InitLife(Iteration);
+//	Iteration.Lifes[0] = InitLife();
+//      Iteration.Lifes[1] = InitLife();
+//	Iteration.NumOfLifes = 2;
 
 	return(Iteration);
 }
@@ -100,11 +149,32 @@ void RunWorld(World &Iteration)
 
 	PrintWorld(Iteration);
 
+//	int i;
+//	scanf("%i", &i);
+
+	for (int i = 0; i < Iteration.NumOfLifes; i++) 
+	{
+		printf("\n Life number: %i", i);
+		int CurRef = RunLife(Iteration, Iteration.Lifes[i]);
+//		if (CurRef != Iteration.Lifes[i].Ref) { 
+//			Iteration.NumOfLifes++; 
+//	                printf("\n NewRef: %i Ref: %i", CurRef, Iteration.Lifes[i].Ref);
+//		}
+//		printf("\n NewRef: %i Ref: %i", CurRef, Iteration.Lifes[i].Ref);
+	}
+
+//        PrintWorld(Iteration);
+
 	if (Iteration.TimeLeft > 0 && Iteration.Energy > 0) RunWorld(Iteration);
 }
 
 int main(void)
 {
+        time_t t;
+
+        // Intializes random number generator
+        srand((unsigned) time(&t));
+
 	World NewWorld = InitWorld();
 	RunWorld(NewWorld);
 }
