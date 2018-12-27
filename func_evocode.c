@@ -33,6 +33,26 @@ int range_rand(int min_num, int max_num) {
 	return min_num + (rand() % (max_num - min_num));
 } 
 
+bool IsAlive(Creature &Life)
+{
+	if  (Life.Energy > 0 && Life.TimeLeft > 0) return(true);
+	return(false);
+}
+
+Creature FindCreature(World &Iteration, int Ref)
+{
+	for (int i = 0; i < Iteration.NumOfLifes; i++)
+	{
+		if (Iteration.Lifes[i].Ref = Ref) return(Iteration.Lifes[i]);
+	}
+}
+
+void PrintCode(Creature &Life)
+{
+	for (int i = 0; i < Life.codelen; i++)
+	printf("%i", Life.Code[i]);
+}
+
 // Calculate All World Energy  
 int AllEnergy(World &Iteration)
 {
@@ -47,10 +67,10 @@ int AllEnergy(World &Iteration)
 
 void PrintLife(Creature &Life)
 {
-//        printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i \nCode:",
-//        Life.Energy, Life.Velocity, Life.TimeLeft, Life.codelen, Life.codepos, Life.ParentRef, Life.Ref);
+        printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i \nCode:",
+        Life.Energy, Life.Velocity, Life.TimeLeft, Life.codelen, Life.codepos, Life.ParentRef, Life.Ref);
 
-//        for (int k = 0; k < Life.codelen; k++) printf("%i", Life.Code[k]);
+        for (int k = 0; k < Life.codelen; k++) printf("%i", Life.Code[k]);
 }
 
 Creature InitLife(World &Iteration, int ParRef = 0)
@@ -66,6 +86,7 @@ Creature InitLife(World &Iteration, int ParRef = 0)
 	Life.codepos = 0;
 	for (int i = 0; i < Life.codelen; i++) Life.Code[i] = range_rand(1, 5);
 	Life.Ref = range_rand(1, 65535);
+	if (ParRef == 0) printf("\n *** REF IS BROKEN");
 	Life.ParentRef = ParRef;
 
 //	printf("\n LIFE BORN");
@@ -83,10 +104,7 @@ int RunLife(World &Iteration, Creature &Life)
 
 	int NewRef = Life.Ref;
 
-//	printf("\n BEFORE START");
-//	PrintLife(Life);
-
-	if (Life.TimeLeft > 0 && Life.Energy > 0)
+	if (IsAlive(Life))
 	{
 		PrintLife(Life);
 		Iteration.AliveCreatures++;
@@ -135,9 +153,6 @@ World InitWorld(void)
 	Iteration.AliveCreatures = 0;
 	InitLife(Iteration);
 	InitLife(Iteration);
-//	Iteration.Lifes[0] = InitLife();
-//      Iteration.Lifes[1] = InitLife();
-//	Iteration.NumOfLifes = 2;
 
 	return(Iteration);
 }
@@ -165,8 +180,6 @@ void RunWorld(World &Iteration)
 		int CurRef = RunLife(Iteration, Iteration.Lifes[i]);
 	}
 
-//        PrintWorld(Iteration);
-
 	if (Iteration.TimeLeft > 0 && Iteration.Energy > 0) RunWorld(Iteration);
 }
 
@@ -179,4 +192,21 @@ int main(void)
 
 	World NewWorld = InitWorld();
 	RunWorld(NewWorld);
+
+	printf("\n\n *** Admire the winners:");
+        for (int i = 0; i < NewWorld.NumOfLifes; i++)
+	{
+		Creature Parent = NewWorld.Lifes[i];
+		if (IsAlive(Parent)) {
+			PrintLife(Parent);
+			while (Parent.ParentRef > 0) {
+				Parent = FindCreature(NewWorld, Parent.ParentRef);
+				printf("->");
+				PrintCode(Parent);
+				PrintLife(Parent);
+			}
+		}
+	}
+
+	printf("\n");
 }
