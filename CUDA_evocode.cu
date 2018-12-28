@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -111,6 +112,12 @@ __global__ void RunLife(World *Iteration, const int n)
 //	struct Creature New; // Make a child with random permutation
 
 	unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+        Iteration->TimeLeft--;
+	Iteration->AliveCreatures = 0;
+	Iteration->Energy = 0;
+//        printf("\n\r------------------------\n\rFunction:PrintWorld TimeLeft:%i Energy:%i NumOfLifes:%i AliveCreatures: %i",
+//        Iteration->TimeLeft, Iteration->Energy, Iteration->NumOfLifes, Iteration->AliveCreatures);
 	
 	if (i < n)
 	{
@@ -122,12 +129,13 @@ __global__ void RunLife(World *Iteration, const int n)
 	// IsAlive
 	if  (Life.Energy > 0 && Life.TimeLeft > 0)
 	{
+		Iteration->Energy += Life.Energy;
+		Iteration->AliveCreatures++;
+
 		// PrintLife	
 	        printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i \nCode:",
 	        Life.Energy, Life.Velocity, Life.TimeLeft, Life.codelen, Life.codepos, Life.ParentRef, Life.Ref);
 		for (int k = 0; k < Life.codelen; k++) printf("%i", Life.Code[k]);
-
-		Iteration->AliveCreatures++;
 
 		// run code "Velocity" number of times     
 		for (int i = 0; i < Life.Velocity; i++) {
@@ -139,7 +147,7 @@ __global__ void RunLife(World *Iteration, const int n)
 			case 2: if (Life.codelen > 3) Life.codelen = Life.codelen/2; // Half genome
 				break;
 			case 3: 
-				for (k = 0; k < Life.codelen-1; k++) // Learn from other creature
+				for (k = 0; k < Life.codelen-1; k++) // Learn from myself? other creature
 				Life.Code[Life.codelen+k] = Life.Code[k+1];
 				Life.codelen = Life.codelen+k;
 				break;
@@ -167,6 +175,9 @@ __global__ void RunLife(World *Iteration, const int n)
 
 		Iteration->Lifes[i] = Life;
 	}
+        printf("\n\r------------------------\n\rFunction:PrintWorld TimeLeft:%i Energy:%i NumOfLifes:%i AliveCreatures: %i",
+        Iteration->TimeLeft, Iteration->Energy, Iteration->NumOfLifes, Iteration->AliveCreatures);
+
 
 //	return(NewRef);
 }
@@ -195,6 +206,7 @@ void NewWorld(World *Iteration)
         Iteration->AliveCreatures = 0;
         InitLife(Iteration, 0);
         InitLife(Iteration, 0);
+	InitLife(Iteration, 0);
 }
 
 void PrintWorld(World *Iteration)
@@ -241,44 +253,51 @@ int main(int argc, char **argv)
         // Intializes random number generator
         srand((unsigned) time(&t));
 
-//	World NewWorld = InitWorld();
-//        NewWorld.AliveCreatures = 0;
+	// set up device
+	int dev = 0;
+	cudaDeviceProp deviceProp;
+	CHECK(cudaGetDeviceProperties(&deviceProp, dev));
+	printf("%s test struct of array at ", argv[0]);
+	printf("device %d: %s \n", dev, deviceProp.name);
+	CHECK(cudaSetDevice(dev));	
 
-    // set up device
-    int dev = 0;
-    cudaDeviceProp deviceProp;
-    CHECK(cudaGetDeviceProperties(&deviceProp, dev));
-    printf("%s test struct of array at ", argv[0]);
-    printf("device %d: %s \n", dev, deviceProp.name);
-    CHECK(cudaSetDevice(dev));	
-
-    // allocate host memory
-    int nElem = 1<22;
-    size_t nBytes = sizeof(World);
-    World     *h_A = (World *)malloc(nBytes);
-    World *hostRef = (World *)malloc(nBytes);
-    World *gpuRef  = (World *)malloc(nBytes);
+	// allocate host memory
+	int nElem = 1<22;
+	size_t nBytes = sizeof(World);
+	World     *h_A = (World *)malloc(nBytes);
+	World *hostRef = (World *)malloc(nBytes);
+	World *gpuRef  = (World *)malloc(nBytes);
 
 	// initialize host array
 	NewWorld(h_A);
 
-   // allocate device memory
-    World *d_A, *d_C;
-    CHECK(cudaMalloc((World**)&d_A, nBytes));
-    CHECK(cudaMalloc((World**)&d_C, nBytes));
+	// allocate device memory
+	World *d_A, *d_C;
 
-   // copy data from host to device
-    CHECK(cudaMemcpy(d_A, h_A, nBytes, cudaMemcpyHostToDevice));
+	CHECK(cudaMalloc((World**)&d_A, nBytes));
+        CHECK(cudaMalloc((World**)&d_C, nBytes));
+	
+	// copy data from host to device
+	CHECK(cudaMemcpy(d_A, h_A, nBytes, cudaMemcpyHostToDevice));
 
-        RunLife <<<1, 10>>>(d_A, 1<<22);
+        PrintLife(&h_A->Lifes[0]);
+        PrintLife(&h_A->Lifes[1]);
+        PrintLife(&h_A->Lifes[2]);
+
+        // Run World all iterations
+        for (int i = 0; i < 100; i++)
+        {
+		RunLife <<<1, h_A->NumOfLifes>>>(d_A, 1<<22);
+	}
+
 	CHECK(cudaDeviceSynchronize());
 	CHECK(cudaMemcpy(gpuRef, d_A, nBytes, cudaMemcpyDeviceToHost));
 
 	PrintLife(&gpuRef->Lifes[0]);
         PrintLife(&gpuRef->Lifes[1]);
+        PrintLife(&gpuRef->Lifes[2]);
 
-    CHECK(cudaGetLastError());
-
+	CHECK(cudaGetLastError());
 
 //	RunWorld(&NewWorld);
 
@@ -310,7 +329,6 @@ int main(int argc, char **argv)
                         }
                 }
         }*/
-
 
 	printf("\n");
 }
