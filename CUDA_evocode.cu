@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -78,7 +77,7 @@ void PrintLife(Creature *Life)
         printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i \nCode:",
         Life->Energy, Life->Velocity, Life->TimeLeft, Life->codelen, Life->codepos, Life->ParentRef, Life->Ref);
 
-        for (int k = 0; k < Life->codelen; k++) printf("%i", Life->Code[k]);
+        for (int k = 0; k < Life->codelen; k++) printf("%i,", Life->Code[k]);
 }
 
 Creature InitLife(World *Iteration, int ParRef)
@@ -95,7 +94,7 @@ Creature InitLife(World *Iteration, int ParRef)
 	for (int i = 0; i < Life.codelen; i++) Life.Code[i] = range_rand(1, 5);
 //	Life.Ref = range_rand(1, 65535);
 	Life.Ref = Iteration->NumOfLifes;
-	if (ParRef == 0) printf("\n *** REF IS BROKEN");
+//	if (ParRef == 0) printf("\n *** REF IS BROKEN");
 	Life.ParentRef = ParRef;
 
 //	printf("\n LIFE BORN");
@@ -107,15 +106,36 @@ Creature InitLife(World *Iteration, int ParRef)
 	return(Life);
 }
 
+void NewLife(World *Iteration, int ParRef, Creature *Life)
+{
+        Life->Energy = Iteration->MaxEnergy - Iteration->Energy;
+        if (Life->Energy > 5) Life->Energy = 5;
+
+        Life->Velocity = 1;
+        Life->TimeLeft = 5;
+        Life->codelen = range_rand(5, 10);
+        Life->codepos = 0;
+        for (int i = 0; i < Life->codelen; i++) Life->Code[i] = range_rand(1, 5);
+        Life->Ref = Iteration->NumOfLifes;
+//        if (ParRef == 0) printf("\n *** REF IS BROKEN");
+        Life->ParentRef = ParRef;
+
+//      printf("\n LIFE BORN");
+//      PrintLife(Life);
+
+        Iteration->Lifes[Iteration->NumOfLifes] = *Life;
+        Iteration->NumOfLifes++;
+}
+
 __global__ void RunLife(World *Iteration, const int n)
 {
-//	struct Creature New; // Make a child with random permutation
+	struct Creature NewLife; // Make a child with random permutation
 
 	unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
         Iteration->TimeLeft--;
-	Iteration->AliveCreatures = 0;
-	Iteration->Energy = 0;
+//	Iteration->AliveCreatures = 0;
+//	Iteration->Energy = 0;
 //        printf("\n\r------------------------\n\rFunction:PrintWorld TimeLeft:%i Energy:%i NumOfLifes:%i AliveCreatures: %i",
 //        Iteration->TimeLeft, Iteration->Energy, Iteration->NumOfLifes, Iteration->AliveCreatures);
 	
@@ -129,13 +149,13 @@ __global__ void RunLife(World *Iteration, const int n)
 	// IsAlive
 	if  (Life.Energy > 0 && Life.TimeLeft > 0)
 	{
-		Iteration->Energy += Life.Energy;
-		Iteration->AliveCreatures++;
+//		Iteration->Energy += Life.Energy;
+//		Iteration->AliveCreatures++;
 
 		// PrintLife	
-	        printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i \nCode:",
-	        Life.Energy, Life.Velocity, Life.TimeLeft, Life.codelen, Life.codepos, Life.ParentRef, Life.Ref);
-		for (int k = 0; k < Life.codelen; k++) printf("%i", Life.Code[k]);
+//	        printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i \nCode:",
+//	        Life.Energy, Life.Velocity, Life.TimeLeft, Life.codelen, Life.codepos, Life.ParentRef, Life.Ref);
+//		for (int k = 0; k < Life.codelen; k++) printf("%i", Life.Code[k]);
 
 		// run code "Velocity" number of times     
 		for (int i = 0; i < Life.Velocity; i++) {
@@ -151,15 +171,18 @@ __global__ void RunLife(World *Iteration, const int n)
 				Life.Code[Life.codelen+k] = Life.Code[k+1];
 				Life.codelen = Life.codelen+k;
 				break;
-/*			case 4: New = InitLife(Iteration, Life.Ref);
-				if (New.codelen < 9 && range_rand(1, 3) == 1) { // 1/3 likelyhood of permutation for short genome
-					New.Code[New.codelen] = range_rand(1, 5); // add new code at the end
-					New.codelen++;
-				} else {
-					New.Code[range_rand(1, New.codelen-1)] = range_rand(1, 5); // 100% likelyhood of permutation for long genome and short that out of 1/3
+			case 4: Life.TimeLeft = 5;
+				Life.Energy = 5;
+				Life.Velocity = 0;
+				Life.codepos = 0;
+				for (int i = 1; i < Life.codelen; i++) {
+					if (Life.Code[i] % 2 == 0) {
+						int code = Life.Code[i];
+						Life.Code[i] = Life.Code[i-1];
+						Life.Code[i-1] = code;
+					}
 				}
-				NewRef = New.Ref;
-				break;*/
+				break;
 			case 5: Life.Velocity++;
 				break;
 		}
@@ -175,11 +198,8 @@ __global__ void RunLife(World *Iteration, const int n)
 
 		Iteration->Lifes[i] = Life;
 	}
-        printf("\n\r------------------------\n\rFunction:PrintWorld TimeLeft:%i Energy:%i NumOfLifes:%i AliveCreatures: %i",
-        Iteration->TimeLeft, Iteration->Energy, Iteration->NumOfLifes, Iteration->AliveCreatures);
-
-
-//	return(NewRef);
+//        printf("\n\r------------------------\n\rFunction:PrintWorld TimeLeft:%i Energy:%i NumOfLifes:%i AliveCreatures: %i",
+//        Iteration->TimeLeft, Iteration->Energy, Iteration->NumOfLifes, Iteration->AliveCreatures);
 }
 
 World InitWorld(void)
@@ -204,14 +224,15 @@ void NewWorld(World *Iteration)
         Iteration->NumOfLifes = 0;
         Iteration->MaxEnergy = 50;
         Iteration->AliveCreatures = 0;
-        InitLife(Iteration, 0);
-        InitLife(Iteration, 0);
-	InitLife(Iteration, 0);
+	for (int i = 0; i < 500; i++)
+	{
+	        InitLife(Iteration, 0);
+	}
 }
 
 void PrintWorld(World *Iteration)
 {
-	printf("\n\r------------------------\n\rFunction:PrintWorld TimeLeft:%i Energy:%i NumOfLifes:%i AliveCreatures: %i", 
+	printf("\n\r------------------------\n\rFunction:PrintWorld TimeLeft:%i Energy:%i NumOfLifes:%i AliveCreatures: %i\n--------------------", 
 	Iteration->TimeLeft, Iteration->Energy, Iteration->NumOfLifes, Iteration->AliveCreatures);
 }
 
@@ -253,6 +274,10 @@ int main(int argc, char **argv)
         // Intializes random number generator
         srand((unsigned) time(&t));
 
+	printf("%i, %i, %i, %i, %i", 1<<22, 2>>1, 3>>1, 4>>1, 5>>1);
+        printf("%i, %i, %i, %i, %i", 1<<1, 2<<1, 3<<1, 4<<1, 5<<1);
+
+
 	// set up device
 	int dev = 0;
 	cudaDeviceProp deviceProp;
@@ -280,22 +305,39 @@ int main(int argc, char **argv)
 	// copy data from host to device
 	CHECK(cudaMemcpy(d_A, h_A, nBytes, cudaMemcpyHostToDevice));
 
-        PrintLife(&h_A->Lifes[0]);
-        PrintLife(&h_A->Lifes[1]);
-        PrintLife(&h_A->Lifes[2]);
+//        PrintLife(&h_A->Lifes[0]);
+//        PrintLife(&h_A->Lifes[1]);
+//        PrintLife(&h_A->Lifes[2]);
+
+	PrintWorld(h_A);
 
         // Run World all iterations
-        for (int i = 0; i < 100; i++)
+//        for (int i = 0; i < 100; i++)
+	do
         {
 		RunLife <<<1, h_A->NumOfLifes>>>(d_A, 1<<22);
-	}
+		CHECK(cudaDeviceSynchronize());
+	        CHECK(cudaMemcpy(gpuRef, d_A, nBytes, cudaMemcpyDeviceToHost));
+		gpuRef->AliveCreatures = 0;
+		gpuRef->Energy = 0;
+		for (int j = 0; j < gpuRef->NumOfLifes; j++) {
+//			PrintLife(&gpuRef->Lifes[j]);
+			if (gpuRef->Lifes[j].Energy > 0 && gpuRef->Lifes[j].TimeLeft > 0) {
+				gpuRef->AliveCreatures++;
+				gpuRef->Energy += gpuRef->Lifes[j].Energy;
+			}
+		}
+//                PrintWorld(gpuRef);
+	} while (gpuRef->Energy > 0 && gpuRef->TimeLeft > 0);
 
 	CHECK(cudaDeviceSynchronize());
 	CHECK(cudaMemcpy(gpuRef, d_A, nBytes, cudaMemcpyDeviceToHost));
 
-	PrintLife(&gpuRef->Lifes[0]);
-        PrintLife(&gpuRef->Lifes[1]);
-        PrintLife(&gpuRef->Lifes[2]);
+	PrintWorld(gpuRef);
+
+//	PrintLife(&gpuRef->Lifes[0]);
+//        PrintLife(&gpuRef->Lifes[1]);
+//        PrintLife(&gpuRef->Lifes[2]);
 
 	CHECK(cudaGetLastError());
 
