@@ -14,6 +14,7 @@ struct Creature {
 	int codelen, codepos;
 	int ParentRef;
 	int Ref;
+	bool Child;
 };
 
 typedef struct Creature Creature;
@@ -23,6 +24,7 @@ struct World {
 	int Energy;
 	int TimeLeft;
 	struct Creature Lifes[5000];
+//	bool ChildLifes[5000];
 	int NumOfLifes;
 	int AliveCreatures;
 	int MaxEnergy;
@@ -77,7 +79,10 @@ void PrintLife(Creature *Life)
         printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i \nCode:",
         Life->Energy, Life->Velocity, Life->TimeLeft, Life->codelen, Life->codepos, Life->ParentRef, Life->Ref);
 
-        for (int k = 0; k < Life->codelen; k++) printf("%i,", Life->Code[k]);
+        for (int k = 0; k < Life->codelen; k++) {
+		if (k == Life->codepos) printf("*"); 
+		printf("%i,", Life->Code[k]);
+	}
 }
 
 Creature InitLife(World *Iteration, int ParRef)
@@ -91,6 +96,7 @@ Creature InitLife(World *Iteration, int ParRef)
 	Life.TimeLeft = 5;
 	Life.codelen = range_rand(5, 10);
 	Life.codepos = 0;
+	Life.Child = false;
 	for (int i = 0; i < Life.codelen; i++) Life.Code[i] = range_rand(1, 5);
 //	Life.Ref = range_rand(1, 65535);
 	Life.Ref = Iteration->NumOfLifes;
@@ -115,6 +121,7 @@ void NewLife(World *Iteration, int ParRef, Creature *Life)
         Life->TimeLeft = 5;
         Life->codelen = range_rand(5, 10);
         Life->codepos = 0;
+	Life->Child = false;
         for (int i = 0; i < Life->codelen; i++) Life->Code[i] = range_rand(1, 5);
         Life->Ref = Iteration->NumOfLifes;
 //        if (ParRef == 0) printf("\n *** REF IS BROKEN");
@@ -171,17 +178,7 @@ __global__ void RunLife(World *Iteration, const int n)
 				Life.Code[Life.codelen+k] = Life.Code[k+1];
 				Life.codelen = Life.codelen+k;
 				break;
-			case 4: Life.TimeLeft = 5;
-				Life.Energy = 5;
-				Life.Velocity = 0;
-				Life.codepos = 0;
-				for (int i = 1; i < Life.codelen; i++) {
-					if (Life.Code[i] % 2 == 0) {
-						int code = Life.Code[i];
-						Life.Code[i] = Life.Code[i-1];
-						Life.Code[i-1] = code;
-					}
-				}
+			case 4: Life.Child = true;
 				break;
 			case 5: Life.Velocity++;
 				break;
@@ -220,11 +217,11 @@ World InitWorld(void)
 void NewWorld(World *Iteration)
 {
         Iteration->Energy = 0;
-        Iteration->TimeLeft = 100;
+        Iteration->TimeLeft = 20;
         Iteration->NumOfLifes = 0;
         Iteration->MaxEnergy = 50;
         Iteration->AliveCreatures = 0;
-	for (int i = 0; i < 500; i++)
+	for (int i = 0; i < 2; i++)
 	{
 	        InitLife(Iteration, 0);
 	}
@@ -274,9 +271,6 @@ int main(int argc, char **argv)
         // Intializes random number generator
         srand((unsigned) time(&t));
 
-	printf("%i, %i, %i, %i, %i", 1<<22, 2>>1, 3>>1, 4>>1, 5>>1);
-        printf("%i, %i, %i, %i, %i", 1<<1, 2<<1, 3<<1, 4<<1, 5<<1);
-
 
 	// set up device
 	int dev = 0;
@@ -294,7 +288,7 @@ int main(int argc, char **argv)
 	World *gpuRef  = (World *)malloc(nBytes);
 
 	// initialize host array
-	NewWorld(h_A);
+	NewWorld(gpuRef);
 
 	// allocate device memory
 	World *d_A, *d_C;
@@ -303,31 +297,66 @@ int main(int argc, char **argv)
         CHECK(cudaMalloc((World**)&d_C, nBytes));
 	
 	// copy data from host to device
-	CHECK(cudaMemcpy(d_A, h_A, nBytes, cudaMemcpyHostToDevice));
+//	CHECK(cudaMemcpy(d_A, gpuRef, nBytes, cudaMemcpyHostToDevice));
 
 //        PrintLife(&h_A->Lifes[0]);
 //        PrintLife(&h_A->Lifes[1]);
 //        PrintLife(&h_A->Lifes[2]);
 
-	PrintWorld(h_A);
+	PrintWorld(gpuRef);
 
         // Run World all iterations
 //        for (int i = 0; i < 100; i++)
 	do
         {
-		RunLife <<<1, h_A->NumOfLifes>>>(d_A, 1<<22);
+//                for (int j = 0; j < gpuRef->NumOfLifes; j++) {
+//			gpuRef->ChildLifes[j] = false;
+//			printf(">>%d", gpuRef->ChildLifes[j]);
+//		}
+
+                // copy data from host to device
+                CHECK(cudaMemcpy(d_A, gpuRef, nBytes, cudaMemcpyHostToDevice));
+
+		RunLife <<<1, gpuRef->NumOfLifes>>>(d_A, 1<<22);
 		CHECK(cudaDeviceSynchronize());
 	        CHECK(cudaMemcpy(gpuRef, d_A, nBytes, cudaMemcpyDeviceToHost));
 		gpuRef->AliveCreatures = 0;
 		gpuRef->Energy = 0;
 		for (int j = 0; j < gpuRef->NumOfLifes; j++) {
 //			PrintLife(&gpuRef->Lifes[j]);
+//                        printf(">>%d", gpuRef->ChildLifes[j]);
 			if (gpuRef->Lifes[j].Energy > 0 && gpuRef->Lifes[j].TimeLeft > 0) {
 				gpuRef->AliveCreatures++;
 				gpuRef->Energy += gpuRef->Lifes[j].Energy;
+//	                        PrintLife(&gpuRef->Lifes[j]);
+			if (gpuRef->Lifes[j].Child == true) 
+			{
+				gpuRef->Lifes[j].Child = false;
+//				printf("\n ***LIFE IS BORN from %i", gpuRef->Lifes[j].Ref);
+//                                PrintLife(&gpuRef->Lifes[j]);
+				gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 5;
+                                gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 5;
+                                gpuRef->Lifes[gpuRef->NumOfLifes].Velocity = 1;
+                                gpuRef->Lifes[gpuRef->NumOfLifes].codelen = gpuRef->Lifes[j].codelen;
+                                gpuRef->Lifes[gpuRef->NumOfLifes].codepos = 0;
+			        for (int k = 0; k < gpuRef->Lifes[j].codelen; k++) {
+					if (range_rand(1, 3) == 1) {
+                                              gpuRef->Lifes[gpuRef->NumOfLifes].Code[k] = range_rand(1, 5);		
+					}
+					else { 
+						gpuRef->Lifes[gpuRef->NumOfLifes].Code[k] = gpuRef->Lifes[j].Code[k];
+					}
+				}
+				gpuRef->Lifes[gpuRef->NumOfLifes].Ref = gpuRef->NumOfLifes;
+                                gpuRef->Lifes[gpuRef->NumOfLifes].ParentRef = gpuRef->Lifes[j].Ref;
+//				printf("\n *** Parent: %i", j);
+                                gpuRef->NumOfLifes++;
+			}
 			}
 		}
-//                PrintWorld(gpuRef);
+                PrintWorld(gpuRef);
+		// copy data from host to device
+//	        CHECK(cudaMemcpy(d_A, gpuRef, nBytes, cudaMemcpyHostToDevice));
 	} while (gpuRef->Energy > 0 && gpuRef->TimeLeft > 0);
 
 	CHECK(cudaDeviceSynchronize());
@@ -344,13 +373,13 @@ int main(int argc, char **argv)
 //	RunWorld(&NewWorld);
 
 	printf("\n\n *** Admire the winners genomes history:");
-/*        for (int i = 0; i < NewWorld.NumOfLifes; i++)
+        for (int i = 0; i < gpuRef->NumOfLifes; i++)
 	{
-		Creature Parent = NewWorld.Lifes[i];
+		Creature Parent = gpuRef->Lifes[i];
 		if (IsAlive(&Parent)) {
 			PrintLife(&Parent);
 			while (Parent.ParentRef > 0) {
-				Parent = FindCreature(&NewWorld, Parent.ParentRef);
+				Parent = FindCreature(gpuRef, Parent.ParentRef);
 				printf("->");
 				PrintCode(&Parent);
 //				PrintLife <<<1,1>>>(Parent);
@@ -358,19 +387,19 @@ int main(int argc, char **argv)
 		}
 	}
         printf("\n\n *** Admire the winners story:");
-        for (int i = 0; i < NewWorld.NumOfLifes; i++)
+        for (int i = 0; i < gpuRef->NumOfLifes; i++)
         {
-                Creature Parent = NewWorld.Lifes[i];
+                Creature Parent = gpuRef->Lifes[i];
                 if (IsAlive(&Parent)) {
 //                        PrintLife(Parent);
 			printf("\n");
                         while (Parent.ParentRef > 0) {
 				printf("%i->", Parent.Ref);
-                                Parent = FindCreature(&NewWorld, Parent.ParentRef);
+                                Parent = FindCreature(gpuRef, Parent.ParentRef);
 //                              PrintLife <<<1, 1>>>(Parent);
                         }
                 }
-        }*/
+        }
 
 	printf("\n");
 }
