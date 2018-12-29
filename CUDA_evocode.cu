@@ -217,7 +217,7 @@ World InitWorld(void)
 void NewWorld(World *Iteration)
 {
         Iteration->Energy = 0;
-        Iteration->TimeLeft = 20;
+        Iteration->TimeLeft = 100;
         Iteration->NumOfLifes = 0;
         Iteration->MaxEnergy = 50;
         Iteration->AliveCreatures = 0;
@@ -317,7 +317,8 @@ int main(int argc, char **argv)
                 // copy data from host to device
                 CHECK(cudaMemcpy(d_A, gpuRef, nBytes, cudaMemcpyHostToDevice));
 
-		RunLife <<<1, gpuRef->NumOfLifes>>>(d_A, 1<<22);
+//		RunLife <<<1, gpuRef->NumOfLifes>>>(d_A, 1<<22);
+	        RunLife <<<1, 512>>>(d_A, 1<<22);
 		CHECK(cudaDeviceSynchronize());
 	        CHECK(cudaMemcpy(gpuRef, d_A, nBytes, cudaMemcpyDeviceToHost));
 		gpuRef->AliveCreatures = 0;
