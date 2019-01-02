@@ -79,7 +79,7 @@ int AllEnergy(World *Iteration)
 
 void PrintLife(Creature *Life)
 {
-        printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i OUTPUT:%i \nCode:",
+        printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i OUTPUT:%i# \nCode:",
         Life->Energy, Life->Velocity, Life->TimeLeft, Life->codelen, Life->codepos, Life->ParentRef, Life->Ref, Life->Output);
 
         for (int k = 0; k < Life->codelen; k++) {
@@ -234,7 +234,7 @@ void NewWorld(World *Iteration)
         Iteration->MaxEnergy = 50;
         Iteration->AliveCreatures = 0;
 	Iteration->Input = 5;
-	Iteration->Fitness = ((((Iteration->Input + Iteration->Input) * Iteration->Input) - Iteration->Input) / Iteration->Input);
+	Iteration->Fitness = ((((Iteration->Input + Iteration->Input) * Iteration->Input) - Iteration->Input) / Iteration->Input) + Iteration->Input;
 	for (int i = 0; i < 2; i++)
 	{
 	        InitLife(Iteration, 0);
@@ -324,6 +324,7 @@ int main(int argc, char **argv)
 
 	PrintWorld(gpuRef);
 
+        int BestFit = abs(gpuRef->Fitness - gpuRef->Lifes[0].Output);
         // Run World all iterations
 //        for (int i = 0; i < 200; i++)
 	do
@@ -342,7 +343,7 @@ int main(int argc, char **argv)
 	        CHECK(cudaMemcpy(gpuRef, d_A, nBytes, cudaMemcpyDeviceToHost));
 		gpuRef->AliveCreatures = 0;
 		gpuRef->Energy = 0;
-		int BestFit = abs(gpuRef->Fitness - gpuRef->Lifes[0].Output);
+		BestFit = abs(gpuRef->Fitness - gpuRef->Lifes[0].Output);
 		int BestFitNo = 0;
 		for (int j = 0; j < gpuRef->NumOfLifes; j++) {
 //			PrintLife(&gpuRef->Lifes[j]);
@@ -357,6 +358,7 @@ int main(int argc, char **argv)
 				BestFit = abs(gpuRef->Fitness - gpuRef->Lifes[j].Output);
 				BestFitNo = j;
 //				printf(" *** BestFit = %i - %i = %i", gpuRef->Lifes[j].Output, gpuRef->Fitness, BestFit);
+				if (BestFit == 0) break;
 			}
 			}
 		}
@@ -389,7 +391,7 @@ int main(int argc, char **argv)
                 PrintWorld(gpuRef);
 		// copy data from host to device
 //	        CHECK(cudaMemcpy(d_A, gpuRef, nBytes, cudaMemcpyHostToDevice));
-	} while (gpuRef->Energy > 0 && gpuRef->TimeLeft > 0);
+	} while (gpuRef->Energy > 0 && gpuRef->TimeLeft > 0 && BestFit != 0);
 
 	CHECK(cudaDeviceSynchronize());
 	CHECK(cudaMemcpy(gpuRef, d_A, nBytes, cudaMemcpyDeviceToHost));
