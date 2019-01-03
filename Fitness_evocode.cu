@@ -176,16 +176,17 @@ __global__ void RunLife(World *Iteration, const int n)
 		{
 			case 1: Life.Energy += 2;
 				break;
-			case 2: //if (Life.codelen > 3) Life.codelen = Life.codelen/2; // Half genome
+			case 2: Life.Velocity++; //if (Life.codelen > 3) Life.codelen = Life.codelen/2; // Half genome
 				break;
 			case 3: 
 				//for (k = 0; k < Life.codelen-1; k++) // Learn from myself? other creature
 				//Life.Code[Life.codelen+k] = Life.Code[k+1];
 				//Life.codelen = Life.codelen+k;
 				break;
-			case 4: Life.Child = true;
+			case 4: //Life.Child = true;
+				Life.Output = Life.Output--;
 				break;
-			case 5: Life.Velocity++;
+			case 5: Life.Output = Life.Output++;
 				break;
 			case 6: Life.Output = Life.Output + Iteration->Input; break;
                         case 7: Life.Output = Life.Output - Iteration->Input; break;
@@ -234,7 +235,7 @@ void NewWorld(World *Iteration)
         Iteration->MaxEnergy = 50;
         Iteration->AliveCreatures = 0;
 	Iteration->Input = 5;
-	Iteration->Fitness = ((((Iteration->Input + Iteration->Input) * Iteration->Input) - Iteration->Input) / Iteration->Input) + Iteration->Input;
+	Iteration->Fitness = ((((Iteration->Input + Iteration->Input + 1) * Iteration->Input) - Iteration->Input) / Iteration->Input) + Iteration->Input - 1;
 	for (int i = 0; i < 2; i++)
 	{
 	        InitLife(Iteration, 0);
