@@ -334,7 +334,7 @@ int main(int argc, char **argv)
 			}
 			}
 		}
-		for (int n = 0; n < 10; n++) 
+		for (int n = 0; n < range_rand(10, 20); n++) 
 		{
 			gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 15;
                         gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 15;
