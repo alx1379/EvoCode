@@ -158,9 +158,9 @@ __global__ void RunLife(World *Iteration, const int n)
 				break;
 			case 2: Life.Velocity++; //if (Life.codelen > 3) Life.codelen = Life.codelen/2; // Half genome
 				break;
-			case 3: //Life.Output[0] = Life.Output[0] * Life.Output[0];
-				//Life.Output[1] = Life.Output[1] * Life.Output[1];
-				//Life.Output[2] = Life.Output[2] * Life.Output[2];
+			case 3: Life.Output[0] = Life.Output[0] * Life.Output[0];
+				Life.Output[1] = Life.Output[1] * Life.Output[1];
+				Life.Output[2] = Life.Output[2] * Life.Output[2];
 				//for (k = 0; k < Life.codelen-1; k++) // Learn from myself? other creature
 				//Life.Code[Life.codelen+k] = Life.Code[k+1];
 				//Life.codelen = Life.codelen+k;
@@ -182,13 +182,13 @@ __global__ void RunLife(World *Iteration, const int n)
 				Life.Output[1] = Life.Output[1] - Iteration->Input[1];
 				Life.Output[2] = Life.Output[2] - Iteration->Input[2];
 				break;
-                        case 8: //Life.Output[0] = Life.Output[0] * Iteration->Input[0]; 
-				//Life.Output[1] = Life.Output[1] * Iteration->Input[1];
-				//Life.Output[2] = Life.Output[2] * Iteration->Input[2];
+                        case 8: Life.Output[0] = Life.Output[0] * Iteration->Input[0]; 
+				Life.Output[1] = Life.Output[1] * Iteration->Input[1];
+				Life.Output[2] = Life.Output[2] * Iteration->Input[2];
 				break;
-                        case 9: //Life.Output[0] = Life.Output[0] / Iteration->Input[0]; 
-				//Life.Output[1] = Life.Output[1] / Iteration->Input[1];
-				//Life.Output[2] = Life.Output[2] / Iteration->Input[2];
+                        case 9: Life.Output[0] = Life.Output[0] / Iteration->Input[0]; 
+				Life.Output[1] = Life.Output[1] / Iteration->Input[1];
+				Life.Output[2] = Life.Output[2] / Iteration->Input[2];
 				break;
 		}
 		Life.codepos++;
@@ -217,7 +217,7 @@ void NewWorld(World *Iteration)
         Iteration->AliveCreatures = 0;
 	Iteration->Input[0] = 5;
 //	Iteration->Fitness = ((((Iteration->Input + Iteration->Input + 1) * Iteration->Input) - Iteration->Input) / Iteration->Input) + Iteration->Input - 1;
-	Iteration->Fitness[0] = (Iteration->Input[0] * Iteration->Input[0]) * + 1;
+	Iteration->Fitness[0] = (Iteration->Input[0] * Iteration->Input[0]) + 1;
 //	Iteration->Fitness[0] = 1;
         Iteration->Input[1] = 10;
 	Iteration->Fitness[1] = (Iteration->Input[1] * Iteration->Input[1]) + 1;
@@ -334,13 +334,15 @@ int main(int argc, char **argv)
 			}
 			}
 		}
-		for (int n = 0; n < range_rand(10, 20); n++) 
+		for (int n = 0; n < range_rand(10, 30); n++) 
 		{
-			gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 19;
-                        gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 19;
+			gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 29;
+                        gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 29;
                         gpuRef->Lifes[gpuRef->NumOfLifes].Velocity = 1;
 			if (range_rand(1, 4) == 1) {
 				gpuRef->Lifes[gpuRef->NumOfLifes].codelen = gpuRef->Lifes[BestFitNo].codelen / 2;
+			} else if (range_rand(1, 4) == 1) {
+				gpuRef->Lifes[gpuRef->NumOfLifes].codelen = gpuRef->Lifes[BestFitNo].codelen * 2;
 			} else {
 				gpuRef->Lifes[gpuRef->NumOfLifes].codelen = gpuRef->Lifes[BestFitNo].codelen;
 			}
