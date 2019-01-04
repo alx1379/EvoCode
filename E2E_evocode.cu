@@ -336,17 +336,17 @@ int main(int argc, char **argv)
 		}
 		for (int n = 0; n < range_rand(10, 20); n++) 
 		{
-			gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 15;
-                        gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 15;
+			gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 19;
+                        gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 19;
                         gpuRef->Lifes[gpuRef->NumOfLifes].Velocity = 1;
-			if (range_rand(1, 5) == 1) {
+			if (range_rand(1, 4) == 1) {
 				gpuRef->Lifes[gpuRef->NumOfLifes].codelen = gpuRef->Lifes[BestFitNo].codelen / 2;
 			} else {
 				gpuRef->Lifes[gpuRef->NumOfLifes].codelen = gpuRef->Lifes[BestFitNo].codelen;
 			}
                         gpuRef->Lifes[gpuRef->NumOfLifes].codepos = 0;
 		        for (int k = 0; k < gpuRef->Lifes[BestFitNo].codelen; k++) {
-				if (range_rand(1, 3) == 1) {
+				if (range_rand(1, 2) == 1) {
 	                                gpuRef->Lifes[gpuRef->NumOfLifes].Code[k] = range_rand(1, 9);		
 				}
 				else { 
