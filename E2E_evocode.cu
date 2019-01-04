@@ -24,7 +24,7 @@ typedef struct Creature Creature;
 struct World {
 	int Energy;
 	int TimeLeft;
-	struct Creature Lifes[500];
+	struct Creature Lifes[50000];
 	int NumOfLifes;
 	int AliveCreatures;
 	int MaxEnergy;
@@ -295,7 +295,7 @@ int main(int argc, char **argv)
                 CHECK(cudaMemcpy(d_A, gpuRef, nBytes, cudaMemcpyHostToDevice));
 
 //		RunLife <<<1, gpuRef->NumOfLifes>>>(d_A, 1<<22);
-	        RunLife <<<1, 512>>>(d_A, 1<<22);
+	        RunLife <<<64, 512>>>(d_A, 1<<22);
 		CHECK(cudaDeviceSynchronize());
 	        CHECK(cudaMemcpy(gpuRef, d_A, nBytes, cudaMemcpyDeviceToHost));
 		gpuRef->AliveCreatures = 0;
@@ -334,10 +334,10 @@ int main(int argc, char **argv)
 			}
 			}
 		}
-		for (int n = 0; n < 3; n++) 
+		for (int n = 0; n < 10; n++) 
 		{
-			gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 10;
-                        gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 5;
+			gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 15;
+                        gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 15;
                         gpuRef->Lifes[gpuRef->NumOfLifes].Velocity = 1;
 			if (range_rand(1, 5) == 1) {
 				gpuRef->Lifes[gpuRef->NumOfLifes].codelen = gpuRef->Lifes[BestFitNo].codelen / 2;
@@ -358,7 +358,7 @@ int main(int argc, char **argv)
 			gpuRef->Lifes[gpuRef->NumOfLifes].Output[0] = 0;
                         gpuRef->Lifes[gpuRef->NumOfLifes].Output[1] = 0;
                         gpuRef->Lifes[gpuRef->NumOfLifes].Output[2] = 0;
-//                        PrintLife(&gpuRef->Lifes[BestFitNo]);
+                        PrintLife(&gpuRef->Lifes[BestFitNo]);
 //			printf(" %ld#%ld#%ld#%ld", BestFit[0], BestFit[1], BestFit[2], BestFit[0] + BestFit[1] + BestFit[2]);
                         printf("\n %ld#", BestFit[0] + BestFit[1] + BestFit[2]);
 
