@@ -25,7 +25,6 @@ struct World {
 	int Energy;
 	int TimeLeft;
 	struct Creature Lifes[50000];
-//	bool ChildLifes[5000];
 	int NumOfLifes;
 	int AliveCreatures;
 	int MaxEnergy;
@@ -57,6 +56,7 @@ Creature FindCreature(World *Iteration, int Ref)
 	{
 		if (Iteration->Lifes[i].Ref == Ref) return(Iteration->Lifes[i]);
 	}
+	return(Iteration->Lifes[0]);
 }
 
 void PrintCode(Creature *Life)
@@ -79,7 +79,7 @@ int AllEnergy(World *Iteration)
 
 void PrintLife(Creature *Life)
 {
-        printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i OUTPUT:%i#%i#%i# \nCode:",
+        printf("\n\rFunction:PrintLife Energy:%i Velocity:%i TimeLeft:%i codelen:%i codepos: %i parentref: %i ref: %i OUTPUT:%ld#%ld#%ld# \nCode:",
         Life->Energy, Life->Velocity, Life->TimeLeft, Life->codelen, Life->codepos, Life->ParentRef, Life->Ref, Life->Output[0], Life->Output[1], Life->Output[2]);
 
         for (int k = 0; k < Life->codelen; k++) {
@@ -104,7 +104,6 @@ Creature InitLife(World *Iteration, int ParRef)
 	Life.Output[1] = 0;
 	Life.Output[2] = 0;
 	for (int i = 0; i < Life.codelen; i++) Life.Code[i] = range_rand(1, 9);
-//	Life.Ref = range_rand(1, 65535);
 	Life.Ref = Iteration->NumOfLifes;
 //	if (ParRef == 0) printf("\n *** REF IS BROKEN");
 	Life.ParentRef = ParRef;
@@ -116,31 +115,6 @@ Creature InitLife(World *Iteration, int ParRef)
 	Iteration->NumOfLifes++;
 
 	return(Life);
-}
-
-void NewLife(World *Iteration, int ParRef, Creature *Life)
-{
-        Life->Energy = Iteration->MaxEnergy - Iteration->Energy;
-        if (Life->Energy > 5) Life->Energy = 15;
-
-        Life->Velocity = 1;
-        Life->TimeLeft = 19;
-        Life->codelen = range_rand(5, 10);
-        Life->codepos = 0;
-	Life->Child = false;
-	Life->Output[0] = 0;
-	Life->Output[1] = 0;
-	Life->Output[2] = 0;
-        for (int i = 0; i < Life->codelen; i++) Life->Code[i] = range_rand(1, 9);
-        Life->Ref = Iteration->NumOfLifes;
-//        if (ParRef == 0) printf("\n *** REF IS BROKEN");
-        Life->ParentRef = ParRef;
-
-//      printf("\n LIFE BORN");
-//      PrintLife(Life);
-
-        Iteration->Lifes[Iteration->NumOfLifes] = *Life;
-        Iteration->NumOfLifes++;
 }
 
 __global__ void RunLife(World *Iteration, const int n)
@@ -234,23 +208,6 @@ __global__ void RunLife(World *Iteration, const int n)
 //        Iteration->TimeLeft, Iteration->Energy, Iteration->NumOfLifes, Iteration->AliveCreatures);
 }
 
-/*World InitWorld(void)
-{
-        World Iteration;
-
-        Iteration.Energy = 0;
-        Iteration.TimeLeft = 200;
-	Iteration.NumOfLifes = 0;
-	Iteration.MaxEnergy = 50;
-	Iteration.AliveCreatures = 0;
-	Iteration.Input = 0;
-        Iteration.Fitness = ((((Iteration.Input + Iteration.Input) * Iteration.Input) - Iteration.Input) / Iteration.Input) + Iteration.Input;
-	InitLife(&Iteration, 0);
-	InitLife(&Iteration, 0);
-
-	return(Iteration);
-}*/
-
 void NewWorld(World *Iteration)
 {
         Iteration->Energy = 0;
@@ -285,37 +242,6 @@ void PrintWorld(World *Iteration)
 	Iteration->TimeLeft, Iteration->Energy, Iteration->NumOfLifes, Iteration->AliveCreatures);
 }
 
-// Run World Iteration
-void RunWorld(World *Iteration)
-{
-	Iteration->Energy = AllEnergy(Iteration);
-	Iteration->TimeLeft--;
-
-	PrintWorld(Iteration);
-
-//	int i;
-//	scanf("%i", &i);
-
-	Iteration->AliveCreatures = 0;
-
-	RunLife <<<1, 10>>>(Iteration, 1<<22);
-	cudaDeviceSynchronize();
-
-//	for (int i = 0; i < Iteration->NumOfLifes; i++) 
-//	{
-//		printf("\n Life number: %i", i);
-//		int CurRef = RunLife <<<1, 1>>>(Iteration, &Iteration->Lifes[i]);
-//		RunLife <<<1, 1>>>(Iteration, &Iteration->Lifes[i]);
-//	}
-
-	if (Iteration->TimeLeft > 0 && Iteration->Energy > 0) RunWorld(Iteration);
-}
-
-__global__ void helloFromGPU(void)
-{
-  printf("Hello World from GPU thread");
-}
-
 int main(int argc, char **argv)
 {
         time_t t;
@@ -327,7 +253,6 @@ int main(int argc, char **argv)
 	int dev = 3;
 	cudaDeviceProp deviceProp;
 	CHECK(cudaGetDeviceProperties(&deviceProp, dev));
-	printf("%s test struct of array at ", argv[0]);
 	printf("device %d: %s \n", dev, deviceProp.name);
 	CHECK(cudaSetDevice(dev));	
 
@@ -364,14 +289,8 @@ int main(int argc, char **argv)
 	int BestFitNo = 0;
 
         // Run World all iterations
-//        for (int i = 0; i < 200; i++)
 	do
         {
-//                for (int j = 0; j < gpuRef->NumOfLifes; j++) {
-//			gpuRef->ChildLifes[j] = false;
-//			printf(">>%d", gpuRef->ChildLifes[j]);
-//		}
-
                 // copy data from host to device
                 CHECK(cudaMemcpy(d_A, gpuRef, nBytes, cudaMemcpyHostToDevice));
 
@@ -393,34 +312,29 @@ int main(int argc, char **argv)
 				gpuRef->AliveCreatures++;
 				gpuRef->Energy += gpuRef->Lifes[j].Energy;
 	                        PrintLife(&gpuRef->Lifes[j]);
-                                printf(" *** BestFit[0] = %i - %i = %i vs CurBestFit %i", gpuRef->Fitness[0], gpuRef->Lifes[j].Output[0], abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]), BestFit[0]);
-                                printf(" *** BestFit[1] = %i - %i = %i vs CurBestFit %i", gpuRef->Fitness[1], gpuRef->Lifes[j].Output[1], abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]), BestFit[1]);
-                                printf(" *** BestFit[2] = %i - %i = %i vs CurBestFit %i", gpuRef->Fitness[2], gpuRef->Lifes[j].Output[2], abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]), BestFit[2]);
+                                printf(" *** BestFit[0] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[0], gpuRef->Lifes[j].Output[0], abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]), BestFit[0]);
+                                printf(" *** BestFit[1] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[1], gpuRef->Lifes[j].Output[1], abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]), BestFit[1]);
+                                printf(" *** BestFit[2] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[2], gpuRef->Lifes[j].Output[2], abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]), BestFit[2]);
 //			if (abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]) < BestFit[0] && abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]) < BestFit[1] && abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]) < BestFit[2]) {
 			if (abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]) + abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]) + abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]) < BestFit[0] + BestFit[1] + BestFit[2]) {
-				printf("\n *** BestFit vs NewBestFit : %i# vs %i#", BestFit[0] + BestFit[1] + BestFit[2], abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]) + abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]) + abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]));
+				printf("\n *** BestFit vs NewBestFit : %ld# vs %ld#", BestFit[0] + BestFit[1] + BestFit[2], abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]) + abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]) + abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]));
 				BestFit[0] = abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]);
                                 BestFit[1] = abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]);
                                 BestFit[2] = abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]);
 				BestFitNo = j;
-//				printf(" *** BestFit[0] = %i - %i = %i", gpuRef->Lifes[j].Output[0], gpuRef->Fitness[0], BestFit[0]);
+//				printf(" *** BestFit[0] = %ld - %ld = %ld", gpuRef->Lifes[j].Output[0], gpuRef->Fitness[0], BestFit[0]);
 				if (BestFit[0] == 0 && BestFit[1] == 0 && BestFit[2] == 0) {
 					PrintLife(&gpuRef->Lifes[j]);
-	                                printf(" *** BestFit[0] = %i - %i = %i vs CurBestFit %i", gpuRef->Fitness[0], gpuRef->Lifes[j].Output[0], abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]), BestFit[0]);
-		                        printf(" *** BestFit[1] = %i - %i = %i vs CurBestFit %i", gpuRef->Fitness[1], gpuRef->Lifes[j].Output[1], abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]), BestFit[1]);
-			                printf(" *** BestFit[2] = %i - %i = %i vs CurBestFit %i", gpuRef->Fitness[2], gpuRef->Lifes[j].Output[2], abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]), BestFit[2]);
+	                                printf(" *** BestFit[0] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[0], gpuRef->Lifes[j].Output[0], abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]), BestFit[0]);
+		                        printf(" *** BestFit[1] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[1], gpuRef->Lifes[j].Output[1], abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]), BestFit[1]);
+			                printf(" *** BestFit[2] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[2], gpuRef->Lifes[j].Output[2], abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]), BestFit[2]);
 					break;
 				}
 			}
 			}
 		}
-			for (int n = 0; n < 10; n++) 
-			{
-//			if (gpuRef->Lifes[j].Child == true) 
-//			{
-//				gpuRef->Lifes[j].Child = false;
-//				printf("\n ***LIFE IS BORN from %i", gpuRef->Lifes[BestFitNo].Ref);
-//                                PrintLife(&gpuRef->Lifes[BestFitNo]);
+		for (int n = 0; n < 10; n++) 
+		{
 			gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 15;
                         gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 19;
                         gpuRef->Lifes[gpuRef->NumOfLifes].Velocity = 1;
@@ -431,7 +345,7 @@ int main(int argc, char **argv)
 			}
                         gpuRef->Lifes[gpuRef->NumOfLifes].codepos = 0;
 		        for (int k = 0; k < gpuRef->Lifes[BestFitNo].codelen; k++) {
-				if (range_rand(1, 4) == 1) {
+				if (range_rand(1, 3) == 1) {
 	                                gpuRef->Lifes[gpuRef->NumOfLifes].Code[k] = range_rand(1, 9);		
 				}
 				else { 
@@ -444,19 +358,14 @@ int main(int argc, char **argv)
                         gpuRef->Lifes[gpuRef->NumOfLifes].Output[1] = 0;
                         gpuRef->Lifes[gpuRef->NumOfLifes].Output[2] = 0;
 //                        PrintLife(&gpuRef->Lifes[BestFitNo]);
-//                        printf(" *** BestFit[0] = %i - %i = %i vs CurBestFit %i", gpuRef->Fitness[0], gpuRef->Lifes[BestFitNo].Output[0], abs(gpuRef->Fitness[0] - gpuRef->Lifes[BestFitNo].Output[0]), BestFit[0]);
-//                        printf(" *** BestFit[1] = %i - %i = %i vs CurBestFit %i", gpuRef->Fitness[1], gpuRef->Lifes[BestFitNo].Output[1], abs(gpuRef->Fitness[1] - gpuRef->Lifes[BestFitNo].Output[1]), BestFit[1]);
-//                        printf(" *** BestFit[2] = %i - %i = %i vs CurBestFit %i", gpuRef->Fitness[2], gpuRef->Lifes[BestFitNo].Output[2], abs(gpuRef->Fitness[2] - gpuRef->Lifes[BestFitNo].Output[2]), BestFit[2]);
-//			printf(" %i#%i#%i#%i", BestFit[0], BestFit[1], BestFit[2], BestFit[0] + BestFit[1] + BestFit[2]);
-                        printf("\n %i#", BestFit[0] + BestFit[1] + BestFit[2]);
+//			printf(" %ld#%ld#%ld#%ld", BestFit[0], BestFit[1], BestFit[2], BestFit[0] + BestFit[1] + BestFit[2]);
+                        printf("\n %ld#", BestFit[0] + BestFit[1] + BestFit[2]);
 
 //				printf("\n *** Parent: %i", j);
                         printf("\n ***LIFE IS BORN from %i", gpuRef->Lifes[BestFitNo].Ref);
 //                        PrintLife(&gpuRef->Lifes[gpuRef->NumOfLifes]);
                         gpuRef->NumOfLifes++;
-			}
-//			}
-//		}
+		}
                 PrintWorld(gpuRef);
 		// copy data from host to device
 //	        CHECK(cudaMemcpy(d_A, gpuRef, nBytes, cudaMemcpyHostToDevice));
@@ -468,13 +377,7 @@ int main(int argc, char **argv)
 
 	PrintWorld(gpuRef);
 
-//	PrintLife(&gpuRef->Lifes[0]);
-//        PrintLife(&gpuRef->Lifes[1]);
-//        PrintLife(&gpuRef->Lifes[2]);
-
-	CHECK(cudaGetLastError());
-
-//	RunWorld(&NewWorld);
+	CHECK(cudaGetLastError());;
 
 	printf("\n\n *** Admire the winners genomes history:");
         for (int i = 0; i < gpuRef->NumOfLifes; i++)
