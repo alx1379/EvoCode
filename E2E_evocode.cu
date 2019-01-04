@@ -24,7 +24,7 @@ typedef struct Creature Creature;
 struct World {
 	int Energy;
 	int TimeLeft;
-	struct Creature Lifes[50000];
+	struct Creature Lifes[500];
 	int NumOfLifes;
 	int AliveCreatures;
 	int MaxEnergy;
@@ -182,13 +182,13 @@ __global__ void RunLife(World *Iteration, const int n)
 				Life.Output[1] = Life.Output[1] - Iteration->Input[1];
 				Life.Output[2] = Life.Output[2] - Iteration->Input[2];
 				break;
-                        case 8: Life.Output[0] = Life.Output[0] * Iteration->Input[0]; 
-				Life.Output[1] = Life.Output[1] * Iteration->Input[1];
-				Life.Output[2] = Life.Output[2] * Iteration->Input[2];
+                        case 8: //Life.Output[0] = Life.Output[0] * Iteration->Input[0]; 
+				//Life.Output[1] = Life.Output[1] * Iteration->Input[1];
+				//Life.Output[2] = Life.Output[2] * Iteration->Input[2];
 				break;
-                        case 9: Life.Output[0] = Life.Output[0] / Iteration->Input[0]; 
-				Life.Output[1] = Life.Output[1] / Iteration->Input[1];
-				Life.Output[2] = Life.Output[2] / Iteration->Input[2];
+                        case 9: //Life.Output[0] = Life.Output[0] / Iteration->Input[0]; 
+				//Life.Output[1] = Life.Output[1] / Iteration->Input[1];
+				//Life.Output[2] = Life.Output[2] / Iteration->Input[2];
 				break;
 		}
 		Life.codepos++;
@@ -217,13 +217,13 @@ void NewWorld(World *Iteration)
         Iteration->AliveCreatures = 0;
 	Iteration->Input[0] = 5;
 //	Iteration->Fitness = ((((Iteration->Input + Iteration->Input + 1) * Iteration->Input) - Iteration->Input) / Iteration->Input) + Iteration->Input - 1;
-	Iteration->Fitness[0] = (Iteration->Input[0] * Iteration->Input[0]) * Iteration->Input[0] + 1;
+	Iteration->Fitness[0] = (Iteration->Input[0] * Iteration->Input[0]) * + 1;
 //	Iteration->Fitness[0] = 1;
         Iteration->Input[1] = 10;
-	Iteration->Fitness[1] = (Iteration->Input[1] * Iteration->Input[1]) * Iteration->Input[1] + 1;
+	Iteration->Fitness[1] = (Iteration->Input[1] * Iteration->Input[1]) + 1;
 //	Iteration->Fitness[1] = 1;
         Iteration->Input[2] = 0;
-        Iteration->Fitness[2] = (Iteration->Input[2] * Iteration->Input[2]) * Iteration->Input[2] + 1;
+        Iteration->Fitness[2] = (Iteration->Input[2] * Iteration->Input[2]) + 1;
 //        Iteration->Fitness[2] = 1;
 	for (int i = 0; i < 2; i++)
 	{
@@ -300,21 +300,22 @@ int main(int argc, char **argv)
 	        CHECK(cudaMemcpy(gpuRef, d_A, nBytes, cudaMemcpyDeviceToHost));
 		gpuRef->AliveCreatures = 0;
 		gpuRef->Energy = 0;
-//		BestFit[0] = abs(gpuRef->Fitness[0] - gpuRef->Lifes[BestFitNo].Output[0]);
-//		BestFit[1] = abs(gpuRef->Fitness[1] - gpuRef->Lifes[BestFitNo].Output[1]);
-//	        BestFit[2] = abs(gpuRef->Fitness[2] - gpuRef->Lifes[BestFitNo].Output[2]);
-//		int BestFitNo = 0;
+	        BestFitNo = gpuRef->NumOfLifes-1;
+		BestFit[0] = abs(gpuRef->Fitness[0] - gpuRef->Lifes[BestFitNo].Output[0]);
+		BestFit[1] = abs(gpuRef->Fitness[1] - gpuRef->Lifes[BestFitNo].Output[1]);
+	        BestFit[2] = abs(gpuRef->Fitness[2] - gpuRef->Lifes[BestFitNo].Output[2]);
 		for (int j = 0; j < gpuRef->NumOfLifes; j++) {
 //			PrintLife(&gpuRef->Lifes[j]);
 //                        printf(">>%d", gpuRef->ChildLifes[j]);
-			if (gpuRef->Lifes[j].Energy > 0 && gpuRef->Lifes[j].TimeLeft > 0) {
+			if (gpuRef->Lifes[j].Energy > 0 && gpuRef->Lifes[j].TimeLeft > 0) 
+			{
 //	                        PrintLife(&gpuRef->Lifes[j]);
 				gpuRef->AliveCreatures++;
 				gpuRef->Energy += gpuRef->Lifes[j].Energy;
-	                        PrintLife(&gpuRef->Lifes[j]);
-                                printf(" *** BestFit[0] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[0], gpuRef->Lifes[j].Output[0], abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]), BestFit[0]);
-                                printf(" *** BestFit[1] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[1], gpuRef->Lifes[j].Output[1], abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]), BestFit[1]);
-                                printf(" *** BestFit[2] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[2], gpuRef->Lifes[j].Output[2], abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]), BestFit[2]);
+//	                        PrintLife(&gpuRef->Lifes[j]);
+//                                printf(" *** BestFit[0] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[0], gpuRef->Lifes[j].Output[0], abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]), BestFit[0]);
+//                                printf(" *** BestFit[1] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[1], gpuRef->Lifes[j].Output[1], abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]), BestFit[1]);
+//                                printf(" *** BestFit[2] = %ld - %ld = %ld vs CurBestFit %ld", gpuRef->Fitness[2], gpuRef->Lifes[j].Output[2], abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]), BestFit[2]);
 //			if (abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]) < BestFit[0] && abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]) < BestFit[1] && abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]) < BestFit[2]) {
 			if (abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]) + abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]) + abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]) < BestFit[0] + BestFit[1] + BestFit[2]) {
 				printf("\n *** BestFit vs NewBestFit : %ld# vs %ld#", BestFit[0] + BestFit[1] + BestFit[2], abs(gpuRef->Fitness[0] - gpuRef->Lifes[j].Output[0]) + abs(gpuRef->Fitness[1] - gpuRef->Lifes[j].Output[1]) + abs(gpuRef->Fitness[2] - gpuRef->Lifes[j].Output[2]));
@@ -333,10 +334,10 @@ int main(int argc, char **argv)
 			}
 			}
 		}
-		for (int n = 0; n < 10; n++) 
+		for (int n = 0; n < 3; n++) 
 		{
-			gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 15;
-                        gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 19;
+			gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 10;
+                        gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 5;
                         gpuRef->Lifes[gpuRef->NumOfLifes].Velocity = 1;
 			if (range_rand(1, 5) == 1) {
 				gpuRef->Lifes[gpuRef->NumOfLifes].codelen = gpuRef->Lifes[BestFitNo].codelen / 2;
