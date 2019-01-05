@@ -23,8 +23,8 @@ typedef struct Creature Creature;
 // Structure for World
 struct World {
 	int Energy;
-	int TimeLeft;
-	struct Creature Lifes[1000];
+	long TimeLeft;
+	struct Creature Lifes[32000];
 	int NumOfLifes;
 	int AliveCreatures;
 	int MaxEnergy;
@@ -214,17 +214,19 @@ __global__ void RunLife(World *Iteration, const int n)
 void NewWorld(World *Iteration)
 {
         Iteration->Energy = 0;
-        Iteration->TimeLeft = 50000;
+        Iteration->TimeLeft = 1500000;
         Iteration->NumOfLifes = 0;
         Iteration->MaxEnergy = 50;
         Iteration->AliveCreatures = 0;
 	int I0 = Iteration->Input[0] = 5;
 //	Iteration->Fitness = ((((Iteration->Input + Iteration->Input + 1) * Iteration->Input) - Iteration->Input) / Iteration->Input) + Iteration->Input - 1;
-	Iteration->Fitness[0] = (I0 * I0) * I0 + 1;
+	// Code:9,9,4,6,9,5,7,9,5,4,5,3,4,6,3,8,5,
+//	Iteration->Fitness[0] = ()
+	Iteration->Fitness[0] = (((I0 * I0) * I0 + 1 + I0) - 1) * I0;
         int I1 = Iteration->Input[1] = 10;
-	Iteration->Fitness[1] = (I1 * I1) * I1 + 1;
+	Iteration->Fitness[1] = (((I1 * I1) * I1 + 1 + I1) - 1) * I1;
         int I2 = Iteration->Input[2] = 0;
-        Iteration->Fitness[2] = (I2 * I2) * I2 + 1;
+        Iteration->Fitness[2] = (((I2 * I2) * I2 + 1 + I2) - 1) * I2;
 	for (int i = 0; i < 2; i++)
 	{
 	        InitLife(Iteration, 0);
@@ -238,7 +240,7 @@ void NewWorld(World *Iteration)
 
 void PrintWorld(World *Iteration)
 {
-	printf("\n\r------------------------\n\rFunction:PrintWorld TimeLeft:%i Energy:%i NumOfLifes:%i AliveCreatures: %i\n--------------------", 
+	printf("\n\r------------------------\n\rFunction:PrintWorld TimeLeft:%ld Energy:%i NumOfLifes:%i AliveCreatures: %i\n--------------------", 
 	Iteration->TimeLeft, Iteration->Energy, Iteration->NumOfLifes, Iteration->AliveCreatures);
 }
 
@@ -250,7 +252,7 @@ int main(int argc, char **argv)
         srand((unsigned) time(&t));
 
 	// set up device
-	int dev = 3;
+	int dev = 0;
 	cudaDeviceProp deviceProp;
 	CHECK(cudaGetDeviceProperties(&deviceProp, dev));
 	printf("device %d: %s \n", dev, deviceProp.name);
@@ -295,7 +297,7 @@ int main(int argc, char **argv)
                 CHECK(cudaMemcpy(d_A, gpuRef, nBytes, cudaMemcpyHostToDevice));
 
 //		RunLife <<<1, gpuRef->NumOfLifes>>>(d_A, 1<<22);
-	        RunLife <<<2, 512>>>(d_A, 1<<22);
+	        RunLife <<<64, 512>>>(d_A, 1<<22);
 		CHECK(cudaDeviceSynchronize());
 	        CHECK(cudaMemcpy(gpuRef, d_A, nBytes, cudaMemcpyDeviceToHost));
 		gpuRef->AliveCreatures = 0;
@@ -347,6 +349,7 @@ int main(int argc, char **argv)
 				gpuRef->Lifes[p].codelen = gpuRef->Lifes[BestFitNo].codelen / 2;
 			} else if (range_rand(1, 4) == 1) {
 				gpuRef->Lifes[p].codelen = gpuRef->Lifes[BestFitNo].codelen * 2;
+				if (gpuRef->Lifes[p].codelen > 49) gpuRef->Lifes[p].codelen = 49;
 			} else {
 				gpuRef->Lifes[p].codelen = gpuRef->Lifes[BestFitNo].codelen;
 			}
