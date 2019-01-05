@@ -218,16 +218,13 @@ void NewWorld(World *Iteration)
         Iteration->NumOfLifes = 0;
         Iteration->MaxEnergy = 50;
         Iteration->AliveCreatures = 0;
-	Iteration->Input[0] = 5;
+	int I0 = Iteration->Input[0] = 5;
 //	Iteration->Fitness = ((((Iteration->Input + Iteration->Input + 1) * Iteration->Input) - Iteration->Input) / Iteration->Input) + Iteration->Input - 1;
-	Iteration->Fitness[0] = (Iteration->Input[0] * Iteration->Input[0]) * Iteration->Input[0] + 1;
-//	Iteration->Fitness[0] = 1;
-        Iteration->Input[1] = 10;
-	Iteration->Fitness[1] = (Iteration->Input[1] * Iteration->Input[1]) * Iteration->Input[1] + 1;
-//	Iteration->Fitness[1] = 1;
-        Iteration->Input[2] = 0;
-        Iteration->Fitness[2] = (Iteration->Input[2] * Iteration->Input[2]) * Iteration->Input[2] + 1;
-//        Iteration->Fitness[2] = 1;
+	Iteration->Fitness[0] = (I0 * I0) * I0 + 1;
+        int I1 = Iteration->Input[1] = 10;
+	Iteration->Fitness[1] = (I1 * I1) * I1 + 1;
+        int I2 = Iteration->Input[2] = 0;
+        Iteration->Fitness[2] = (I2 * I2) * I2 + 1;
 	for (int i = 0; i < 2; i++)
 	{
 	        InitLife(Iteration, 0);
