@@ -24,7 +24,7 @@ typedef struct Creature Creature;
 struct World {
 	int Energy;
 	int TimeLeft;
-	struct Creature Lifes[50000];
+	struct Creature Lifes[1000];
 	int NumOfLifes;
 	int AliveCreatures;
 	int MaxEnergy;
@@ -147,7 +147,10 @@ __global__ void RunLife(World *Iteration, const int n)
 //	        Life.Energy, Life.Velocity, Life.TimeLeft, Life.codelen, Life.codepos, Life.ParentRef, Life.Ref);
 //		for (int k = 0; k < Life.codelen; k++) printf("%i", Life.Code[k]);
 
-		Life.Output[0] = Life.Output[1] = Life.Output[2] = 0;
+//		Life.Output[0] = Life.Output[1] = Life.Output[2] = 0;
+		Life.Output[0] = Iteration->Input[0];
+                Life.Output[1] = Iteration->Input[1];
+                Life.Output[2] = Iteration->Input[2];
 
 		// run code "Velocity" number of times     
 		for (int i = 0; i < Life.codelen; i++) {
@@ -295,7 +298,7 @@ int main(int argc, char **argv)
                 CHECK(cudaMemcpy(d_A, gpuRef, nBytes, cudaMemcpyHostToDevice));
 
 //		RunLife <<<1, gpuRef->NumOfLifes>>>(d_A, 1<<22);
-	        RunLife <<<64, 512>>>(d_A, 1<<22);
+	        RunLife <<<2, 512>>>(d_A, 1<<22);
 		CHECK(cudaDeviceSynchronize());
 	        CHECK(cudaMemcpy(gpuRef, d_A, nBytes, cudaMemcpyDeviceToHost));
 		gpuRef->AliveCreatures = 0;
@@ -334,40 +337,44 @@ int main(int argc, char **argv)
 			}
 			}
 		}
+		int p = 0;
 		for (int n = 0; n < range_rand(10, 30); n++) 
 		{
-			gpuRef->Lifes[gpuRef->NumOfLifes].Energy = 29;
-                        gpuRef->Lifes[gpuRef->NumOfLifes].TimeLeft = 29;
-                        gpuRef->Lifes[gpuRef->NumOfLifes].Velocity = 1;
+			for (p = p; p < gpuRef->NumOfLifes; p++) if (gpuRef->Lifes[p].TimeLeft <= 0 || gpuRef->Lifes[p].Energy <= 0) break;
+			printf("\n ** Slot for new life is %i", p);
+                        PrintLife(&gpuRef->Lifes[p]);
+			gpuRef->Lifes[p].Energy = 29;
+                        gpuRef->Lifes[p].TimeLeft = 29;
+                        gpuRef->Lifes[p].Velocity = 1;
 			if (range_rand(1, 4) == 1) {
-				gpuRef->Lifes[gpuRef->NumOfLifes].codelen = gpuRef->Lifes[BestFitNo].codelen / 2;
+				gpuRef->Lifes[p].codelen = gpuRef->Lifes[BestFitNo].codelen / 2;
 			} else if (range_rand(1, 4) == 1) {
-				gpuRef->Lifes[gpuRef->NumOfLifes].codelen = gpuRef->Lifes[BestFitNo].codelen * 2;
+				gpuRef->Lifes[p].codelen = gpuRef->Lifes[BestFitNo].codelen * 2;
 			} else {
-				gpuRef->Lifes[gpuRef->NumOfLifes].codelen = gpuRef->Lifes[BestFitNo].codelen;
+				gpuRef->Lifes[p].codelen = gpuRef->Lifes[BestFitNo].codelen;
 			}
-                        gpuRef->Lifes[gpuRef->NumOfLifes].codepos = 0;
+                        gpuRef->Lifes[p].codepos = 0;
 		        for (int k = 0; k < gpuRef->Lifes[BestFitNo].codelen; k++) {
 				if (range_rand(1, 2) == 1) {
-	                                gpuRef->Lifes[gpuRef->NumOfLifes].Code[k] = range_rand(1, 9);		
+	                                gpuRef->Lifes[p].Code[k] = range_rand(1, 9);		
 				}
 				else { 
-					gpuRef->Lifes[gpuRef->NumOfLifes].Code[k] = gpuRef->Lifes[BestFitNo].Code[k];
+					gpuRef->Lifes[p].Code[k] = gpuRef->Lifes[BestFitNo].Code[k];
 				}
 			}
-			gpuRef->Lifes[gpuRef->NumOfLifes].Ref = gpuRef->NumOfLifes;
-                        gpuRef->Lifes[gpuRef->NumOfLifes].ParentRef = gpuRef->Lifes[BestFitNo].Ref;
-			gpuRef->Lifes[gpuRef->NumOfLifes].Output[0] = 0;
-                        gpuRef->Lifes[gpuRef->NumOfLifes].Output[1] = 0;
-                        gpuRef->Lifes[gpuRef->NumOfLifes].Output[2] = 0;
+			gpuRef->Lifes[p].Ref = p;
+                        gpuRef->Lifes[p].ParentRef = gpuRef->Lifes[BestFitNo].Ref;
+			gpuRef->Lifes[p].Output[0] = 0;
+                        gpuRef->Lifes[p].Output[1] = 0;
+                        gpuRef->Lifes[p].Output[2] = 0;
                         PrintLife(&gpuRef->Lifes[BestFitNo]);
 //			printf(" %ld#%ld#%ld#%ld", BestFit[0], BestFit[1], BestFit[2], BestFit[0] + BestFit[1] + BestFit[2]);
-                        printf("\n %ld#", BestFit[0] + BestFit[1] + BestFit[2]);
+//                        printf("\n %ld#", BestFit[0] + BestFit[1] + BestFit[2]);
 
 //				printf("\n *** Parent: %i", j);
-                        printf("\n ***LIFE IS BORN from %i", gpuRef->Lifes[BestFitNo].Ref);
-//                        PrintLife(&gpuRef->Lifes[gpuRef->NumOfLifes]);
-                        gpuRef->NumOfLifes++;
+//                        printf("\n ***LIFE IS BORN from %i", gpuRef->Lifes[BestFitNo].Ref);
+                        PrintLife(&gpuRef->Lifes[p]);
+                        if (p >= gpuRef->NumOfLifes) gpuRef->NumOfLifes++;
 		}
                 PrintWorld(gpuRef);
 		// copy data from host to device
@@ -382,7 +389,10 @@ int main(int argc, char **argv)
 
 	CHECK(cudaGetLastError());;
 
-	printf("\n\n *** Admire the winners genomes history:");
+	printf("\n\n ### THE WINNER IS %i", BestFitNo);
+	PrintLife(&gpuRef->Lifes[BestFitNo]);
+
+/*	printf("\n\n *** Admire the winners genomes history:");
         for (int i = 0; i < gpuRef->NumOfLifes; i++)
 	{
 		Creature Parent = gpuRef->Lifes[i];
@@ -395,8 +405,8 @@ int main(int argc, char **argv)
 //				PrintLife <<<1,1>>>(Parent);
 			}
 		}
-	}
-        printf("\n\n *** Admire the winners story:");
+	}*/
+/*        printf("\n\n *** Admire the winners story:");
         for (int i = 0; i < gpuRef->NumOfLifes; i++)
         {
                 Creature Parent = gpuRef->Lifes[i];
@@ -410,6 +420,6 @@ int main(int argc, char **argv)
                         }
                 }
         }
-
+*/
 	printf("\n");
 }
