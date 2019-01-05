@@ -446,7 +446,7 @@ int main(int argc, char **argv)
                         gpuRef->NumOfLifes++;
 //			}
 //		}
-//                PrintWorld(gpuRef);
+                PrintWorld(gpuRef);
 		// copy data from host to device
 //	        CHECK(cudaMemcpy(d_A, gpuRef, nBytes, cudaMemcpyHostToDevice));
 		if (BestFit[0] == 0 && BestFit[1] == 0 && BestFit[2] == 0) break;
