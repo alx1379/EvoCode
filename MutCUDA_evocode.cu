@@ -157,6 +157,14 @@ __global__ void RunLife(World *Iteration, const int n)
 		int k;
 		switch(Life.Code[i])
 		{
+/*			// https://stackoverflow.com/questions/26650391/generate-random-number-within-a-function-with-curand-without-preallocation
+			int tId = threadIdx.x + (blockIdx.x * blockDim.x);
+			curandState state;
+			curand_init((unsigned long long)clock() + tId, 0, 0, &state);
+
+			double rand1 = curand_uniform_double(&state);
+			double rand2 = curand_uniform_double(&state);*/
+
 			case 1: //Life.Energy += 2;
 				break;
 			case 2: //Life.Velocity++; //if (Life.codelen > 3) Life.codelen = Life.codelen/2; // Half genome
